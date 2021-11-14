@@ -100,3 +100,33 @@ prop_test_df %>%
   )
 ```
 
+## Problem 2
+
+```{r, message = FALSE}
+list_files = list.files("data", full.names = TRUE)
+
+df = 
+  map(list_files, read_csv) %>% 
+  bind_rows()
+
+df =
+  df %>% 
+  mutate(
+    name = list.files("data"),
+    name = substr(name, 1, 6)
+    ) %>% 
+  separate(name, into = c("arm", "id"), sep = "_") %>% 
+  mutate(
+    id = as.numeric(id)
+  ) %>% 
+  select(id, arm, everything()) %>% 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    names_prefix = "week_",
+    values_to = "observation"
+  )
+
+df
+```
+
