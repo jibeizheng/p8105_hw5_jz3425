@@ -143,3 +143,32 @@ df %>%
 ```
 
 Apparently, observations of experimental groups are higher than those of control groups. In general, observations of experimental groups have a increasing trend over weeks, while control groups seem relatively steady.
+
+## Problem 3
+
+```{r}
+set.seed(10)
+
+iris_with_missing = iris %>% 
+  map_df(~replace(.x, sample(1:150, 20), NA)) %>%
+  mutate(Species = as.character(Species)) %>% 
+  janitor::clean_names()
+
+fill_in = function(x) {
+  
+  if (is.numeric(x)) {
+    mean = mean(x, na.rm = TRUE)
+    x = replace_na(x, mean)
+  } else {
+    x = replace_na(x, "virginica")
+  }
+  
+  x
+  
+}
+
+iris_fill = map_dfr(iris_with_missing, fill_in)
+
+iris_fill %>% knitr::kable(digit = 1)
+```
+
