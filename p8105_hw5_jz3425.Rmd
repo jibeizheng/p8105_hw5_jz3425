@@ -1,0 +1,56 @@
+---
+title: "p8105_hw5_jz3425"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Problem 1
+
+```{r, message = FALSE}
+homicide = 
+  read_csv("https://raw.githubusercontent.com/washingtonpost/data-homicides/master/homicide-data.csv")
+```
+
+Discription: The raw data contains `r nrow(homicide)` cases of homicide in 50 large U.S. cities over the past decades.There are `r ncol(homicide)` variables including victim's name, location and time of the killing and whether an arrest was made.
+
+Summarize within cities to obtain the total number of homicides and the number of unsolved homicides:
+```{r}
+homicide_df = 
+  homicide %>% 
+  unite("city_state", city:state)
+
+homicide_total = 
+  homicide_df %>% 
+  group_by(city_state) %>% 
+  summarize(total_number = n())
+
+homicide_unsolved =
+  homicide_df %>% 
+  filter(disposition %in% c("Closed without arrest", "Open/No arrest")) %>% 
+  group_by(city_state) %>% 
+  summarize(unsolved_number = n())
+
+left_join(homicide_total, homicide_unsolved, by = "city_state") %>% 
+  mutate(unsolved_number = replace_na(unsolved_number, 0)) %>% 
+  knitr::kable()
+```
+
