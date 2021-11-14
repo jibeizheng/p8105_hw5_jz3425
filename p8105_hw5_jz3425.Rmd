@@ -6,12 +6,6 @@ output: github_document
 ```{r setup, include = FALSE}
 library(tidyverse)
 
-knitr::opts_chunk$set(
-  fig.width = 6,
-  fig.asp = .6,
-  out.width = "90%"
-)
-
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 
 options(
@@ -49,8 +43,60 @@ homicide_unsolved =
   group_by(city_state) %>% 
   summarize(unsolved_number = n())
 
-left_join(homicide_total, homicide_unsolved, by = "city_state") %>% 
-  mutate(unsolved_number = replace_na(unsolved_number, 0)) %>% 
-  knitr::kable()
+homicide_summarize =
+  left_join(homicide_total, homicide_unsolved, by = "city_state") %>% 
+  mutate(unsolved_number = replace_na(unsolved_number, 0))
+ 
+homicide_summarize %>% knitr::kable()
+```
+
+prop.test for Baltimore:
+
+```{r, warning = FALSE}
+prop_test_baltimore =
+  prop.test(
+    homicide_summarize %>% filter(city_state == "Baltimore_MD") %>% pull(unsolved_number),
+    homicide_summarize %>% filter(city_state == "Baltimore_MD") %>% pull(total_number)
+  )
+
+prop_test_baltimore %>% 
+  broom::tidy() %>% 
+  select(estimate, conf.low, conf.high) %>% 
+  janitor::clean_names() %>% 
+  knitr::kable(digit = 3)
+```
+
+run prop.test for each of the cities:
+
+```{r, warning = FALSE}
+prop_test_df = 
+  homicide_summarize %>% 
+  mutate(
+    prop_test = map2(.x = unsolved_number, .y = total_number, ~ prop.test(x = .x, n = .y)),
+    prop_test = map(prop_test, broom::tidy)
+  ) %>% 
+  unnest() %>% 
+  select(city_state, total_number, unsolved_number, estimate, conf.low, conf.high) %>% 
+  janitor::clean_names()
+
+prop_test_df %>% knitr::kable(digit = 3)
+```
+
+Create a plot that shows the estimates and CIs for each city:
+
+```{r, fig.height=8}
+prop_test_df %>% 
+  mutate(
+    city_state = fct_reorder(city_state, estimate)
+  ) %>% 
+  ggplot(aes(y = city_state, x = estimate, fill = city_state)) +
+  geom_col() +
+  geom_errorbar(aes(xmin = conf_low, xmax = conf_high)) +
+  theme(legend.position = "none") +
+  labs(
+    title = "Estimated unsolved proportion plot",
+    x = "estimated unsolved proportion",
+    y = "city"
+  )
 ```
 
